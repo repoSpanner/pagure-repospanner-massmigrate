@@ -75,11 +75,15 @@ def get_pagure_project():
     return Project
 
 
-def runcmd(workdir, cmd):
+def runcmd(workdir, cmd, env=None):
     logging.debug("Running %s in workdir %s", cmd, workdir)
+    if env:
+        newenv = os.environ.copy()
+        newenv.update(env)
     subprocess.check_call(
         cmd,
         cwd=workdir,
+        env=newenv,
     )
 
 
@@ -129,9 +133,19 @@ def prime_cache(args, project):
     for repotype in REPOTYPES:
         logging.info("Pulling repotype %s", repotype)
         cachedir = os.path.join(pseudopath, repotype, project.path)
+        _, regioninfo = project.repospanner_repo_info(
+            repotype, args.region)
 
         if os.path.exists(cachedir):
-            runcmd(cachedir, ["git", "pull"])
+            env = {
+                "USER": "pagure",
+                "REPOBRIDGE_CONFIG": ":environment:",
+                "REPOBRIDGE_BASEURL": regioninfo["url"],
+                "REPOBRIDGE_CA": regioninfo["ca"],
+                "REPOBRIDGE_CERT": regioninfo["push_cert"]["cert"],
+                "REPOBRIDGE_KEY": regioninfo["push_cert"]['key"],']
+            }
+            runcmd(cachedir, ["git", "pull"], env)
         else:
             try:
                 # Temporarily mark this so we can use the helper functions
