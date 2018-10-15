@@ -33,7 +33,8 @@ def parse_args():
         action="store_true", default=False)
     parser.add_argument(
         "--prime",
-        help="Prime the Pagure cache in this pseudo directory")
+        help="Prime the Pagure cache in this pseudo directory",
+        action="store_true", default=False)
     parser.add_argument(
         "--reconfigure",
         help="Reconfigure Pagure to use this repo from repoSpanner",
