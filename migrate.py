@@ -46,7 +46,7 @@ def parse_args():
         "region",
         help="repoSpanner region to migrate projects to")
     parser.add_argument(
-        "project-match",
+        "project_match",
         help="Regular expression for which projects to migrate")
     return parser.parse_args()
 
