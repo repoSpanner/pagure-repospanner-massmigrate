@@ -194,12 +194,13 @@ def prime_cache(args, project):
     pass
 
 
-def reconfigure(args, project):
+def reconfigure(args, session, project):
     """ Configure the project in the Pagure database to mark it's migrated. """
     logging.info(
         "Marking project %s as moved to repoSpanner", project.fullname)
     project.repospanner_region = args.region
-    get_pagure_session().add(project)
+    session.add(project)
+    session.commit()
 
 
 def run_one_project(args, reponame, user, namespace):
@@ -222,8 +223,7 @@ def run_one_project(args, reponame, user, namespace):
         times['prime'] = time.time() - prime_start
     if args.reconfigure:
         reconf_start = time.time()
-        reconfigure(args, project)
-        session.commit()
+        reconfigure(args, session, project)
         times['reconfigure'] = time.time() - reconf_start
     times['total'] = time.time() - total_start
     time_msg = ", ".join(["%s: %f seconds" % (key, times[key])
