@@ -64,7 +64,7 @@ def main():
     if len(sys.argv) != 2:
         raise SystemExit("Usage: %s <project-match>" % sys.argv[0])
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     matcher = re.compile(sys.argv[1])
 
