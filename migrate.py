@@ -85,6 +85,16 @@ def get_pagure_project():
     return Project
 
 
+def pagure_get_session_and_project(reponame, user, namespace):
+    """ Get and return a new sqlalchemy session and a Pagure project. """
+    from pagure.lib import _get_project, create_session
+    session = create_session(config["DB_URL"])
+    project = _get_project(session, reponame, user, namespace)
+    if project is None:
+        raise ValueError("Project %s, %s, %s could not be found" % (reponame, user, namespace))
+    return session, project
+
+
 def runcmd(workdir, cmd, env=None, mayfail=False):
     """ Execute a command as a subprocess. """
     logging.debug("Running %s in workdir %s", cmd, workdir)
@@ -191,8 +201,10 @@ def reconfigure(args, project):
     get_pagure_session().add(project)
 
 
-def run_one_project(args, project):
+def run_one_project(args, reponame, user, namespace):
     """ Run the requested operations for a single project. """
+    session, project = pagure_get_session_and_project(reponame, user, namespace)
+
     logging.info("Handling project %s", project.fullname)
     times = {}
     total_start = time.time()
@@ -210,6 +222,7 @@ def run_one_project(args, project):
     if args.reconfigure:
         reconf_start = time.time()
         reconfigure(args, project)
+        session.commit()
         times['reconfigure'] = time.time() - reconf_start
     times['total'] = time.time() - total_start
     time_msg = ", ".join(["%s: %f seconds" % (key, times[key])
@@ -233,15 +246,17 @@ def match_and_run(args):
                 "Skipping project %s due to no match", project.fullname)
             continue
         try:
-            run_one_project(args, project)
+            run_one_project(
+                args,
+                project.name,
+                project.user if project.is_fork else None,
+                project.namespace,
+            )
         except Exception:
             traceback.print_exc()
             if args.failfast:
                 raise SystemExit("Project failed with failfast")
 
-    logging.info("Committing database transactions")
-    get_pagure_session().commit()
-    logging.info("Done")
     logging.info("Total time: %f", time.time() - start)
 
 
