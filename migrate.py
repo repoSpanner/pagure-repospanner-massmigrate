@@ -88,6 +88,7 @@ def get_pagure_project():
 def pagure_get_session_and_project(reponame, user, namespace):
     """ Get and return a new sqlalchemy session and a Pagure project. """
     from pagure.lib import _get_project, create_session
+    config = get_pagure_config()
     session = create_session(config["DB_URL"])
     project = _get_project(session, reponame, user, namespace)
     if project is None:
