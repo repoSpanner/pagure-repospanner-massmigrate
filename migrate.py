@@ -252,7 +252,7 @@ def match_and_run(args):
             logging.debug(
                 "Skipping project %s due to no match", project.fullname)
             continue
-        pool.apply_async(run_one_project=args=(
+        pool.apply_async(run_one_project, args=(
             args,
             project.name,
             project.user if project.is_fork else None,
