@@ -208,28 +208,30 @@ def run_one_project(args, reponame, user, namespace):
     session, project = pagure_get_session_and_project(reponame, user, namespace)
 
     logging.info("Handling project %s", project.fullname)
-    times = {}
-    total_start = time.time()
-    if args.create:
-        create_start = time.time()
-        create_repos_in_repospanner(args, project)
-        times['create'] = time.time() - create_start
-    push_start = time.time()
-    run_git_push(args, project)
-    times['push'] = time.time() - push_start
-    if args.prime:
-        prime_start = time.time()
-        prime_cache(args, project)
-        times['prime'] = time.time() - prime_start
-    if args.reconfigure:
-        reconf_start = time.time()
-        reconfigure(args, session, project)
-        times['reconfigure'] = time.time() - reconf_start
-    times['total'] = time.time() - total_start
-    time_msg = ", ".join(["%s: %f seconds" % (key, times[key])
-                          for key in times])
-    logging.info("Project %s done. Timing: %s", project.fullname, time_msg)
-    session.remove()
+    try:
+        times = {}
+        total_start = time.time()
+        if args.create:
+            create_start = time.time()
+            create_repos_in_repospanner(args, project)
+            times['create'] = time.time() - create_start
+        push_start = time.time()
+        run_git_push(args, project)
+        times['push'] = time.time() - push_start
+        if args.prime:
+            prime_start = time.time()
+            prime_cache(args, project)
+            times['prime'] = time.time() - prime_start
+        if args.reconfigure:
+            reconf_start = time.time()
+            reconfigure(args, session, project)
+            times['reconfigure'] = time.time() - reconf_start
+        times['total'] = time.time() - total_start
+        time_msg = ", ".join(["%s: %f seconds" % (key, times[key])
+                            for key in times])
+        logging.info("Project %s done. Timing: %s", project.fullname, time_msg)
+    finally:
+        session.remove()
 
 
 def match_and_run(args):
