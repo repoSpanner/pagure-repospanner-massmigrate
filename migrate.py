@@ -26,7 +26,7 @@ def parse_args():
         help="Decreases logging verbosity",
         action="count", default=0)
     parser.add_argument(
-        "--processes", "-p",
+        "--processes", "-p", type=int,
         help="Number of parallel processes to run.")
     parser.add_argument(
         "--create",
