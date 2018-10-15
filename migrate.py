@@ -133,6 +133,10 @@ def prime_cache(args, project):
 
     for repotype in REPOTYPES:
         logging.info("Pulling repotype %s", repotype)
+        currentdir = project.repopath(repotype)
+        if currentdir is None:
+            logging.info("Repotype not in use, skipping")
+            continue
         cachedir = os.path.join(pseudopath, repotype, project.path)
         _, regioninfo = project.repospanner_repo_info(
             repotype, args.region)
