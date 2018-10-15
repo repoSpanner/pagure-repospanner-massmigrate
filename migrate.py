@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import subprocess
+import time
 import traceback
 
 
@@ -193,14 +194,27 @@ def reconfigure(args, project):
 def run_one_project(args, project):
     """ Run the requested operations for a single project. """
     logging.info("Handling project %s", project.fullname)
+    times = {}
+    total_start = time.time()
     if args.create:
+        create_start = time.time()
         create_repos_in_repospanner(args, project)
+        times['create'] = time.time() - create_start
+    push_start = time.time()
     run_git_push(args, project)
+    times['push'] = time.time() - push_start
     if args.prime:
+        prime_start = time.time()
         prime_cache(args, project)
+        times['prime'] = time.time() - prime_start
     if args.reconfigure:
+        reconf_start = time.time()
         reconfigure(args, project)
-    logging.info("Project %s done", project.fullname)
+        times['reconfigure'] = time.time() - reconf_start
+    times['total'] = time.time() - total_start
+    time_msg = ", ".join(["%s: %f seconds" % (key, times[key])
+                          for key in times])
+    logging.info("Project %s done. Timing: %s", project.fullname, time_msg)
 
 
 def match_and_run(args):
@@ -211,6 +225,8 @@ def match_and_run(args):
 
     query = session.query(Project).filter(Project.repospanner_region==None)
 
+    logging.info("Starting processing")
+    start = time.time()
     for project in query:
         if not matcher.match(project.fullname):
             logging.debug(
@@ -226,6 +242,7 @@ def match_and_run(args):
     logging.info("Committing database transactions")
     get_pagure_session().commit()
     logging.info("Done")
+    logging.info("Total time: %f", time.time() - start)
 
 
 def main():
