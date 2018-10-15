@@ -39,12 +39,12 @@ def parse_args():
         help="Reconfigure Pagure to use this repo from repoSpanner",
         action="store_true", default=False)
     parser.add_argument(
-        "--region",
-        help="repoSpanner region to migrate projects to")
-    parser.add_argument(
         "--pagure-config",
         help="Pagure configuration file location",
         default="/etc/pagure/pagure.cfg")
+    parser.add_argument(
+        "region",
+        help="repoSpanner region to migrate projects to")
     parser.add_argument(
         "project-match",
         help="Regular expression for which projects to migrate")
