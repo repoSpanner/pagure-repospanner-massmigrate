@@ -225,11 +225,11 @@ def run_one_project(args, reponame, user, namespace):
         reconf_start = time.time()
         reconfigure(args, session, project)
         times['reconfigure'] = time.time() - reconf_start
-    session.remove()
     times['total'] = time.time() - total_start
     time_msg = ", ".join(["%s: %f seconds" % (key, times[key])
                           for key in times])
     logging.info("Project %s done. Timing: %s", project.fullname, time_msg)
+    session.remove()
 
 
 def match_and_run(args):
