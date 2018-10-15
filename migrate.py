@@ -16,11 +16,11 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Migrate Pagure projects to repoSpanner")
     parser.add_argument(
-        "--verbose",
+        "--verbose", "-v",
         help="Increase logging verbosity",
         action="count", default=0)
     parser.add_argument(
-        "--quiet",
+        "--quiet", "-q",
         help="Decreases logging verbosity",
         action="count", default=0)
     parser.add_argument(
