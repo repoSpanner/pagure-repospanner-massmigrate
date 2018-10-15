@@ -75,13 +75,16 @@ def get_pagure_project():
     return Project
 
 
-def runcmd(workdir, cmd, env=None):
+def runcmd(workdir, cmd, env=None, mayfail=False):
     logging.debug("Running %s in workdir %s", cmd, workdir)
+    func = subprocess.check_call
+    if mayfail:
+        func = subprocess.call
     if env:
         newenv = os.environ.copy()
         newenv.update(env)
         env = newenv
-    subprocess.check_call(
+    func(
         cmd,
         cwd=workdir,
         env=env,
@@ -150,7 +153,9 @@ def prime_cache(args, project):
                 "REPOBRIDGE_CERT": regioninfo["push_cert"]["cert"],
                 "REPOBRIDGE_KEY": regioninfo["push_cert"]["key"],
             }
-            runcmd(cachedir, ["git", "pull"], env)
+            # This may fail if the repo is empty, and that is fine.
+            # It will be populated when it gets filled by libgit2.
+            runcmd(cachedir, ["git", "pull"], env, True)
         else:
             try:
                 # Temporarily mark this so we can use the helper functions
