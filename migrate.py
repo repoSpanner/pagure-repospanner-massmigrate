@@ -149,7 +149,7 @@ def match_and_run(args):
 
     for project in query:
         if not matcher.match(project.fullname):
-            logging.info(
+            logging.debug(
                 "Skipping project %s due to no match", project.fullname)
             continue
         try:
