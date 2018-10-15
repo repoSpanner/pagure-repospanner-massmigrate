@@ -120,6 +120,27 @@ def run_git_push(args, project):
 
 
 def prime_cache(args, project):
+    logging.info("Priming cache for %s", project.fullname)
+
+    from pagure.lib import REPOTYPES
+    pseudopath = get_pagure_config(args)["REPOSPANNER_PSEUDO_FOLDER"]
+
+    for repotype in REPOTYPES:
+        logging.info("Pulling repotype %s", repotype)
+        cachedir = os.path.join(pseudopath, repotype, project.path)
+
+        if os.path.exists(cachedir):
+            runcmd(cachedir, ["git", "pull"])
+        else:
+            try:
+                # Temporarily mark this so we can use the helper functions
+                project.repospanner_region = args.region
+                # Clone
+                project._repospanner_clone(repotype, True, cachedir)
+            finally:
+                # Make sure to reset this: reconfiguring comes later
+                project.repospanner_region = None
+
     pass
 
 
