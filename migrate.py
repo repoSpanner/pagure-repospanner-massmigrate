@@ -144,7 +144,7 @@ def prime_cache(args, project):
                 "REPOBRIDGE_BASEURL": regioninfo["url"],
                 "REPOBRIDGE_CA": regioninfo["ca"],
                 "REPOBRIDGE_CERT": regioninfo["push_cert"]["cert"],
-                "REPOBRIDGE_KEY": regioninfo["push_cert"]['key"],']
+                "REPOBRIDGE_KEY": regioninfo["push_cert"]["key"],
             }
             runcmd(cachedir, ["git", "pull"], env)
         else:
