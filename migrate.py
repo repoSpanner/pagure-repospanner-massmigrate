@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import multiprocessing
 import os
 import re
 import subprocess
@@ -25,9 +26,8 @@ def parse_args():
         help="Decreases logging verbosity",
         action="count", default=0)
     parser.add_argument(
-        "--failfast", "-x",
-        help="Abort the migration if a single project fails",
-        action="store_true", default=False)
+        "--processes", "-p",
+        help="Number of parallel processes to run.")
     parser.add_argument(
         "--create",
         help="Create the repositories in repoSpanner",
@@ -205,6 +205,9 @@ def reconfigure(args, session, project):
 
 def run_one_project(args, reponame, user, namespace):
     """ Run the requested operations for a single project. """
+    # Make sure that we have the config loaded
+    get_pagure_config(args)
+
     session, project = pagure_get_session_and_project(reponame, user, namespace)
 
     logging.info("Handling project %s", project.fullname)
@@ -238,6 +241,8 @@ def match_and_run(args):
     session = get_pagure_session()
     Project = get_pagure_project()
 
+    pool = multiprocessing.Pool(processes=args.processes, maxtasksperchild=10)
+
     query = session.query(Project).filter(Project.repospanner_region==None)
 
     logging.info("Starting processing")
@@ -247,17 +252,17 @@ def match_and_run(args):
             logging.debug(
                 "Skipping project %s due to no match", project.fullname)
             continue
-        try:
-            run_one_project(
-                args,
-                project.name,
-                project.user if project.is_fork else None,
-                project.namespace,
-            )
-        except Exception:
-            traceback.print_exc()
-            if args.failfast:
-                raise SystemExit("Project failed with failfast")
+        pool.apply_async(run_one_project=args=(
+            args,
+            project.name,
+            project.user if project.is_fork else None,
+            project.namespace,
+        ))
+
+    logging.info("Closing worker pool")
+    pool.close()
+    logging.info("All runs are scheduled, waiting...")
+    pool.join()
 
     logging.info("Total time: %f", time.time() - start)
 
