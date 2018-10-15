@@ -98,6 +98,9 @@ def run_git_push(args, project):
             "Pushing repotype %s for project %s", repotype, project.fullname)
 
         currentdir = project.repopath(repotype)
+        if currentdir is None:
+            logging.info("Repotype not in use, skipping")
+            continue
         repourl, regioninfo = project.repospanner_repo_info(
             repotype, args.region)
 
