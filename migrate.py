@@ -186,6 +186,7 @@ def run_one_project(args, project):
         prime_cache(args, project)
     if args.reconfigure:
         reconfigure(args, project)
+    logging.info("Project %s done", project.fullname)
 
 
 def match_and_run(args):
