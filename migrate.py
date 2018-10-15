@@ -80,10 +80,11 @@ def runcmd(workdir, cmd, env=None):
     if env:
         newenv = os.environ.copy()
         newenv.update(env)
+        env = newenv
     subprocess.check_call(
         cmd,
         cwd=workdir,
-        env=newenv,
+        env=env,
     )
 
 
