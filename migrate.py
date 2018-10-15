@@ -52,30 +52,40 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_pagure_config(args):
+def get_pagure_config(args=None):
     """ Load the Pagure configuration and return pagure_config. """
     if "config" not in _PAGURE_GLOBALS:
+        if not args:
+            raise Exception("Pagure config needs args")
         os.environ["PAGURE_CONFIG"] = args.pagure_config
         from pagure.config import config as pagure_config
         _PAGURE_GLOBALS["config"] = pagure_config
     return _PAGURE_GLOBALS["config"]
 
 
-def get_pagure_session(args):
-    """ Create a Pagure database session. """
+def get_pagure_session():
+    """ Create a Pagure database session.
+
+    This is done here, with the late import, so that pagure.config doesn't get
+    imported before it's configured. """
     if "session" not in _PAGURE_GLOBALS:
-        config = get_pagure_config(args)
+        config = get_pagure_config()
         from pagure.lib import create_session
         _PAGURE_GLOBALS["session"] = create_session(config["DB_URL"])
     return _PAGURE_GLOBALS["session"]
 
 
 def get_pagure_project():
+    """ Get the Pagure Project class.
+
+    This is done here, with the late import, so that pagure.config doesn't get
+    imported before it's configured. """
     from pagure.lib.model import Project
     return Project
 
 
 def runcmd(workdir, cmd, env=None, mayfail=False):
+    """ Execute a command as a subprocess. """
     logging.debug("Running %s in workdir %s", cmd, workdir)
     func = subprocess.check_call
     if mayfail:
@@ -92,12 +102,14 @@ def runcmd(workdir, cmd, env=None, mayfail=False):
 
 
 def create_repos_in_repospanner(args, project):
+    """ Create the repositories in repoSpanner. """
     logging.info("Creating repositories")
     from pagure.lib.git import create_project_repos
     create_project_repos(project, args.region, None, True)
 
 
 def run_git_push(args, project):
+    """ Push the current repositories out to repoSpanner. """
     logging.info("Pushing repositories")
 
     from pagure.lib import REPOTYPES
@@ -129,6 +141,7 @@ def run_git_push(args, project):
 
 
 def prime_cache(args, project):
+    """ Build or update the Pagure pseudo cache. """
     logging.info("Priming cache for %s", project.fullname)
 
     from pagure.lib import REPOTYPES
@@ -170,10 +183,11 @@ def prime_cache(args, project):
 
 
 def reconfigure(args, project):
+    """ Configure the project in the Pagure database to mark it's migrated. """
     logging.info(
         "Marking project %s as moved to repoSpanner", project.fullname)
     project.repospanner_region = args.region
-    get_pagure_session(args).add(project)
+    get_pagure_session().add(project)
 
 
 def run_one_project(args, project):
@@ -192,7 +206,7 @@ def run_one_project(args, project):
 def match_and_run(args):
     """ Retrieves all projects, migrating matching ones. """
     matcher = re.compile(args.project_match)
-    session = get_pagure_session(args)
+    session = get_pagure_session()
     Project = get_pagure_project()
 
     query = session.query(Project).filter(Project.repospanner_region==None)
@@ -210,7 +224,7 @@ def match_and_run(args):
                 raise SystemExit("Project failed with failfast")
 
     logging.info("Committing database transactions")
-    get_pagure_session(args).commit()
+    get_pagure_session().commit()
     logging.info("Done")
 
 
