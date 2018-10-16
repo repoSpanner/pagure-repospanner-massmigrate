@@ -8,6 +8,8 @@ import subprocess
 import time
 import traceback
 
+import pygit2
+
 
 _PAGURE_GLOBALS = {}
 
@@ -152,6 +154,51 @@ def run_git_push(args, project):
         runcmd(currentdir, cmd)
 
 
+def repospanner_clone(project, repotype, set_config, target):
+    """ Create a clone of a repoSpanner repo to filesystem.
+
+    """
+    pagure_config = get_pagure_config()
+    repourl, regioninfo = project.repospanner_repo_info(repotype)
+
+    command = [
+        "git",
+        "-c",
+        "protocol.ext.allow=always",
+        "clone",
+        "ext::%s %s"
+        % (
+            pagure_config["REPOBRIDGE_BINARY"],
+            project._repospanner_repo_name(repotype),
+        ),
+        target,
+    ]
+    environ = os.environ.copy()
+    environ.update(
+        {
+            "USER": "pagure",
+            "REPOBRIDGE_CONFIG": ":environment:",
+            "REPOBRIDGE_BASEURL": regioninfo["url"],
+            "REPOBRIDGE_CA": regioninfo["ca"],
+            "REPOBRIDGE_CERT": regioninfo["push_cert"]["cert"],
+            "REPOBRIDGE_KEY": regioninfo["push_cert"]["key"],
+        }
+    )
+    with open(os.devnull, "w") as devnull:
+        subprocess.check_call(
+            command, stdout=devnull, stderr=subprocess.STDOUT, env=environ
+        )
+
+    repo = pygit2.Repository(target)
+    if set_config:
+        repo.config["repospanner.url"] = repourl
+        repo.config["repospanner.cert"] = regioninfo["push_cert"]["cert"]
+        repo.config["repospanner.key"] = regioninfo["push_cert"]["key"]
+        repo.config["repospanner.cacert"] = regioninfo["ca"]
+        repo.config["repospanner.enabled"] = True
+    return repo
+
+
 def prime_cache(args, project):
     """ Build or update the Pagure pseudo cache. """
     logging.info("Priming cache for %s", project.fullname)
@@ -186,12 +233,10 @@ def prime_cache(args, project):
                 # Temporarily mark this so we can use the helper functions
                 project.repospanner_region = args.region
                 # Clone
-                project._repospanner_clone(repotype, True, cachedir)
+                repospanner_clone(project, repotype, True, cachedir)
             finally:
                 # Make sure to reset this: reconfiguring comes later
                 project.repospanner_region = None
-
-    pass
 
 
 def reconfigure(args, session, project):
