@@ -8,9 +8,9 @@ import subprocess
 import sys
 import traceback
 
-
 os.environ["PAGURE_CONFIG"] = "/etc/pagure/pagure.cfg"
 
+import pygit2
 
 from pagure.config import config as pagure_config
 from pagure.lib import create_session, REPOTYPES
@@ -34,6 +34,50 @@ def runcmd(workdir, cmd, env=None, mayfail=False):
     )
 
 
+def repospanner_clone(project, repotype, set_config, target):
+    """ Create a clone of a repoSpanner repo to filesystem.
+
+    """
+    repourl, regioninfo = project.repospanner_repo_info(repotype)
+
+    command = [
+        "git",
+        "-c",
+        "protocol.ext.allow=always",
+        "clone",
+        "ext::%s %s"
+        % (
+            pagure_config["REPOBRIDGE_BINARY"],
+            project._repospanner_repo_name(repotype),
+        ),
+        target,
+    ]
+    environ = os.environ.copy()
+    environ.update(
+        {
+            "USER": "pagure",
+            "REPOBRIDGE_CONFIG": ":environment:",
+            "REPOBRIDGE_BASEURL": regioninfo["url"],
+            "REPOBRIDGE_CA": regioninfo["ca"],
+            "REPOBRIDGE_CERT": regioninfo["push_cert"]["cert"],
+            "REPOBRIDGE_KEY": regioninfo["push_cert"]["key"],
+        }
+    )
+    with open(os.devnull, "w") as devnull:
+        subprocess.check_call(
+            command, stdout=devnull, stderr=subprocess.STDOUT, env=environ
+        )
+
+    repo = pygit2.Repository(target)
+    if set_config:
+        repo.config["repospanner.url"] = repourl
+        repo.config["repospanner.cert"] = regioninfo["push_cert"]["cert"]
+        repo.config["repospanner.key"] = regioninfo["push_cert"]["key"]
+        repo.config["repospanner.cacert"] = regioninfo["ca"]
+        repo.config["repospanner.enabled"] = True
+    return repo
+
+
 def prime_cache(project):
     """ Build or update the Pagure pseudo cache. """
     logging.info("Priming cache for %s", project.fullname)
@@ -50,7 +94,7 @@ def prime_cache(project):
 
         # Clone
         tempdir = cachedir + '.cacheprime'
-        project._repospanner_clone(repotype, True, tempdir)
+        repospanner_clone(project, repotype, True, tempdir)
 
         if os.path.exists(cachedir):
             if os.path.exists(cachedir + ".old"):
