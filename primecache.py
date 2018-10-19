@@ -1,5 +1,6 @@
 #!/bin/env python
 
+from datetime import datetime
 import logging
 import os
 import re
@@ -80,7 +81,7 @@ def repospanner_clone(project, repotype, set_config, target):
 
 def prime_cache(project):
     """ Build or update the Pagure pseudo cache. """
-    logging.info("Priming cache for %s", project.fullname)
+    logging.info("Priming cache for %s at %s", project.fullname, datetime.utcnow())
 
     pseudopath = pagure_config["REPOSPANNER_PSEUDO_FOLDER"]
 
