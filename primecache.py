@@ -64,10 +64,9 @@ def repospanner_clone(project, repotype, set_config, target):
             "REPOBRIDGE_KEY": regioninfo["push_cert"]["key"],
         }
     )
-    with open(os.devnull, "w") as devnull:
-        subprocess.check_call(
-            command, stdout=devnull, stderr=subprocess.STDOUT, env=environ
-        )
+    subprocess.check_call(
+        command, env=environ
+    )
 
     repo = pygit2.Repository(target)
     if set_config:
