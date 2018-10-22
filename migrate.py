@@ -179,7 +179,7 @@ def _run_git_push(args, project):
             "Pushing %s to %s (info %s)", currentdir, repourl, regioninfo)
 
         subprocess.check_call(
-            command, env=environ
+            command, env=environ, cwd=currentdir,
         )
 
 
