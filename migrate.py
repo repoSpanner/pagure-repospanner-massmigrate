@@ -149,6 +149,8 @@ def _run_git_push(args, project):
             logging.info("Repotype not in use, skipping")
             continue
 
+        logging.info("Source dir: %s", currentdir)
+
         repo = pygit2.Repository(currentdir)
 
         pagure_config = get_pagure_config()
