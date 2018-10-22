@@ -152,14 +152,23 @@ def _run_git_push(args, project):
         pagure_config = get_pagure_config()
         repourl, regioninfo = project.repospanner_repo_info(repotype)
 
+        pushargs = [
+            "--extra", "username", "releng",
+            "--extra", "repotype", repotype,
+            "--extra", "project_name", project.name,
+            "--extra", "project_user", project.user.username if project.is_fork else "",
+            "--extra", "project_namespace", project.namespace or "",
+        ]
+
         command = [
             "git",
             "-c",
             "protocol.ext.allow=always",
             "push",
-            "ext::%s %s"
+            "ext::%s %s %s"
             % (
                 pagure_config["REPOBRIDGE_BINARY"],
+                " ".join(pushargs),
                 project._repospanner_repo_name(repotype),
             ),
             "--mirror",
