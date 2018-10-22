@@ -157,6 +157,9 @@ def _run_git_push(args, project):
         logging.info("Source dir: %s", currentdir)
 
         repo = pygit2.Repository(currentdir)
+        if len(repo.listall_references()) == 0:
+            logging.info("No refs, skipping")
+            continue
 
         pagure_config = get_pagure_config()
         repourl, regioninfo = project.repospanner_repo_info(repotype)
