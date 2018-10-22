@@ -123,6 +123,18 @@ def create_repos_in_repospanner(args, project):
 
 
 def run_git_push(args, project):
+    """ Set up and run git pushes. """
+    try:
+        # Temporarily mark this so we can use the helper functions
+        project.repospanner_region = args.region
+        # Clone
+        _run_git_push(args, project)
+    finally:
+        # Make sure to reset this: reconfiguring comes later
+        project.repospanner_region = None
+
+
+def _run_git_push(args, project):
     """ Push the current repositories out to repoSpanner. """
     logging.info("Pushing repositories")
 
