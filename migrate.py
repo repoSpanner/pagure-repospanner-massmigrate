@@ -136,22 +136,39 @@ def run_git_push(args, project):
         if currentdir is None:
             logging.info("Repotype not in use, skipping")
             continue
-        repourl, regioninfo = project.repospanner_repo_info(
-            repotype, args.region)
 
+        pagure_config = get_pagure_config()
+        repourl, regioninfo = project.repospanner_repo_info(repotype)
+
+        command = [
+            "git",
+            "-c",
+            "protocol.ext.allow=always",
+            "push",
+            "ext::%s %s"
+            % (
+                pagure_config["REPOBRIDGE_BINARY"],
+                project._repospanner_repo_name(repotype),
+            ),
+            target,
+        ]
+        environ = os.environ.copy()
+        environ.update(
+            {
+                "USER": "pagure",
+                "REPOBRIDGE_CONFIG": ":environment:",
+                "REPOBRIDGE_BASEURL": regioninfo["url"],
+                "REPOBRIDGE_CA": regioninfo["ca"],
+                "REPOBRIDGE_CERT": regioninfo["push_cert"]["cert"],
+                "REPOBRIDGE_KEY": regioninfo["push_cert"]["key"],
+            }
+        )
         logging.debug(
             "Pushing %s to %s (info %s)", currentdir, repourl, regioninfo)
 
-        cmd = [
-            "git",
-            "-c", "http.sslcainfo=%s" % regioninfo["ca"],
-            "-c", "http.sslcert=%s" % regioninfo["push_cert"]["cert"],
-            "-c", "http.sslkey=%s" % regioninfo["push_cert"]["key"],
-            "push",
-            repourl,
-            "--mirror",
-        ]
-        runcmd(currentdir, cmd)
+        subprocess.check_call(
+            command, env=environ
+        )
 
 
 def repospanner_clone(project, repotype, set_config, target):
