@@ -188,7 +188,7 @@ def _run_git_push(args, project):
                 project._repospanner_repo_name(repotype),
             ),
         ]
-        repo.extend(repo.listall_references())
+        command.extend(repo.listall_references())
         subprocess.check_call(
             command, env=environ, cwd=currentdir,
         )
