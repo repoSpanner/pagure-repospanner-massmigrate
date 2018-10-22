@@ -160,19 +160,6 @@ def _run_git_push(args, project):
             "--extra", "project_namespace", project.namespace or "",
         ]
 
-        command = [
-            "git",
-            "-c",
-            "protocol.ext.allow=always",
-            "push",
-            "ext::%s %s %s"
-            % (
-                pagure_config["REPOBRIDGE_BINARY"],
-                " ".join(pushargs),
-                project._repospanner_repo_name(repotype),
-            ),
-            "--mirror",
-        ]
         environ = os.environ.copy()
         environ.update(
             {
@@ -187,9 +174,23 @@ def _run_git_push(args, project):
         logging.debug(
             "Pushing %s to %s (info %s)", currentdir, repourl, regioninfo)
 
-        subprocess.check_call(
-            command, env=environ, cwd=currentdir,
-        )
+        for pushtype in ["--all", "--tags"]:
+            command = [
+                "git",
+                "-c",
+                "protocol.ext.allow=always",
+                "push",
+                "ext::%s %s %s"
+                % (
+                    pagure_config["REPOBRIDGE_BINARY"],
+                    " ".join(pushargs),
+                    project._repospanner_repo_name(repotype),
+                ),
+                pushtype,
+            ]
+            subprocess.check_call(
+                command, env=environ, cwd=currentdir,
+            )
 
 
 def repospanner_clone(project, repotype, set_config, target):
