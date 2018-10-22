@@ -162,7 +162,7 @@ def _run_git_push(args, project):
                 pagure_config["REPOBRIDGE_BINARY"],
                 project._repospanner_repo_name(repotype),
             ),
-            target,
+            "--mirror",
         ]
         environ = os.environ.copy()
         environ.update(
