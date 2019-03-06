@@ -73,7 +73,7 @@ def get_pagure_session():
     imported before it's configured. """
     if "session" not in _PAGURE_GLOBALS:
         config = get_pagure_config()
-        from pagure.lib import create_session
+        from pagure.lib.query import create_session
         _PAGURE_GLOBALS["session"] = create_session(config["DB_URL"])
     return _PAGURE_GLOBALS["session"]
 
@@ -89,9 +89,11 @@ def get_pagure_project():
 
 def pagure_get_session_and_project(reponame, user, namespace):
     """ Get and return a new sqlalchemy session and a Pagure project. """
-    from pagure.lib import _get_project, create_session
+    from pagure.lib.query import _get_project, create_session
     config = get_pagure_config()
     session = create_session(config["DB_URL"])
+    if user is not None:
+        user = user.username
     project = _get_project(session, reponame, user, namespace)
     if project is None:
         raise ValueError("Project %s, %s, %s could not be found" % (reponame, user, namespace))
@@ -138,9 +140,9 @@ def _run_git_push(args, project):
     """ Push the current repositories out to repoSpanner. """
     logging.info("Pushing repositories")
 
-    from pagure.lib import REPOTYPES
+    from pagure.lib.query import get_repotypes
 
-    for repotype in REPOTYPES:
+    for repotype in get_repotypes():
         logging.info(
             "Pushing repotype %s for project %s", repotype, project.fullname)
 
@@ -253,10 +255,10 @@ def prime_cache(args, project):
     """ Build or update the Pagure pseudo cache. """
     logging.info("Priming cache for %s", project.fullname)
 
-    from pagure.lib import REPOTYPES
+    from pagure.lib.query import get_repotypes
     pseudopath = get_pagure_config(args)["REPOSPANNER_PSEUDO_FOLDER"]
 
-    for repotype in REPOTYPES:
+    for repotype in get_repotypes():
         logging.info("Pulling repotype %s", repotype)
         currentdir = project.repopath(repotype)
         if currentdir is None:
